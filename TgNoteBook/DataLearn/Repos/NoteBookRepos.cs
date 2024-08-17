@@ -11,40 +11,58 @@ public class NoteBookRepos
     {
         _dbContext = dbContext;
     }
-    public List<NoteBookEntity> GetNotes()
+
+    public async Task<List<NoteBookEntity>> GetNotes(long chatId)
     {
-        return _dbContext.NoteBooks
-        .OrderBy(c => c.Id)
-        .ToList();
+        return await _dbContext.NoteBooks
+            .Where(c => c.TgChatId == chatId)
+            .ToListAsync();
     }
-    public void Add(NoteBookEntity noteBook)
+
+    public async Task<NoteBookEntity> GetNoteTitle(long chatId, string title)
+    {
+        return await _dbContext.NoteBooks
+            .FirstOrDefaultAsync(n => n.TgChatId == chatId && n.Title == title);
+    }
+
+    public async Task AddAsync(NoteBookEntity noteBook)
     {
         var note = new NoteBookEntity
         {
             Id = noteBook.Id,
-            Name = noteBook.Name,
+            TgChatId = noteBook.TgChatId,
+            Title = noteBook.Title,
             Text = noteBook.Text,
-            Created = noteBook.Created,
-            User = noteBook.User,
+            Created = noteBook.Created
         };
-        _dbContext.NoteBooks.Add(note);
-        _dbContext.SaveChanges();
+        _dbContext.NoteBooks.AddAsync(note);
+        await _dbContext.SaveChangesAsync();
     }
+
     public void Update(int id)
     {
         var noteBook = _dbContext.NoteBooks.FirstOrDefault(c => c.Id == id)
-            ?? throw new Exception();
+                       ?? throw new Exception();
         noteBook.Id = noteBook.Id;
-        noteBook.Name = noteBook.Name;
+        noteBook.TgChatId = noteBook.TgChatId;
+        noteBook.Title = noteBook.Title;
         noteBook.Text = noteBook.Text;
         noteBook.Created = noteBook.Created;
 
         _dbContext.SaveChanges();
     }
-    public void Delete(int id)
+
+    public async Task DeleteTitleAsync(long chatId, string title)
     {
-        _dbContext.NoteBooks
-            .Where(c => c.Id == id)
-            .ExecuteDelete();
+        await _dbContext.NoteBooks
+            .Where(c => c.TgChatId == chatId && c.Title == title)
+            .ExecuteDeleteAsync();
+    }
+
+    public async Task DeleteAllAsync(long chatId)
+    {
+        await _dbContext.NoteBooks
+            .Where(c => c.TgChatId == chatId)
+            .ExecuteDeleteAsync();
     }
 }
